@@ -4,25 +4,32 @@ from scan import Cell
 import serial
 
 
-def calc_level(cell):
-    quality = cell.quality
-    num,den = quality.split('/')
-    true = float(num)/float(den)
-    return int(round(true * 5))
+def convert_dbm(val):
+    return (float(10)**(0.1*(val-30)))*10e11
+
+
+def calc_level(cell):   
+    val = int(cell.signal)
+    val = float(100 + val)/10
+    return int(round(val))
 
 
 def get_level():
-    cells = Cell.all('wlan0')
-    cell_levels = sorted([calc_level(c) for c in cells])
-    return cell_levels[-1]
+    cells = Cell.all('wlan1')
+    for c in cells:
+        c.level = calc_level(c)
+    cells.sort(key=lambda x: x.level) 
+    c = cells[-1]
+    print c.ssid, c.signal, c.level
+    return str(c.level)
 
 
 def main():
-    #ser = serial.Serial('/dev/ttyACM0', 9600)
+    ser = serial.Serial('/dev/ttyACM0', 9600)
+    import random
     while True:
         lvl = get_level()
-        #ser.write(lvl)
-        print lvl
+        ser.write(lvl)
         time.sleep(5)
 
 if __name__ == '__main__':
